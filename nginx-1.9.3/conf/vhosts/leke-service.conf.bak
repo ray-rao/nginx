@@ -1,0 +1,94 @@
+upstream question {
+    server 127.0.0.1:8086;
+}
+
+upstream paper {
+    server 127.0.0.1:8085;
+}
+
+upstream repository {
+    server 127.0.0.1:8087;
+}
+
+upstream monitor {
+    server 127.0.0.1:8083;
+}
+
+upstream user {
+    server 127.0.0.1:8091;
+}
+
+upstream beike {
+    server 127.0.0.1:8092;
+}
+
+upstream homework {
+    server 127.0.0.1:8093;
+}
+
+upstream rate {
+    server 127.0.0.1:8095;
+}
+
+upstream tutor {
+    server 127.0.0.1:8088;
+}
+upstream indexer {
+    server 127.0.0.1:8097;
+}
+
+server {
+    listen       80;
+    listen       443;
+    server_name  cas.leke.cn index.leke.cn tutor.leke.cn question.leke.cn homework.leke.cn paper.leke.cn wrongtopic.leke.cn pay.leke.cn search.leke.cn note.leke.cn chat.leke.cn resource.leke.cn diag.leke.cn monitor.leke.cn home.leke.cn beike.leke.cn user.leke.cn incentive.leke.cn recordclass.leke.cn crm.leke.cn convert.leke.cn notice.leke.cn indexer.leke.cn repository.leke.cn lesson.leke.cn course.leke.cn im.leke.cn rate.leke.cn fs.leke.cn sheet.homework.leke.cn voice.leke.cn eduplan.leke.cn mall.leke.cn;
+    
+    ssl on;
+    ssl_certificate server.cer;
+    ssl_certificate_key server.key;
+
+    if ($host ~* (.*)\.leke\.cn$) {
+            set $subdomain $1;
+    }
+   
+    set $flag 1;
+    if ($scheme = "http") {
+        set $flag "${flag}2";
+    }
+    if ($uri !~* ^/api/) {
+        set $flag "${flag}3";
+    }
+    if ($uri ~* \.(htm|jsp)$) {
+        set $flag "${flag}4";
+    }
+    if ($uri ~* ^/(|login|logout|changeRole|changeLearnCenter|checkSession)$) {
+        set $flag "${flag}4";
+    }
+    if ($flag = "1234") {
+        return 301 https://$subdomain.leke.cn$request_uri;
+    }
+ 
+	location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://$subdomain;
+	}
+
+	location /api/w/tutor/invoke.htm  {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://$subdomain/api/w/tutor/invoke.htm?$args;
+	    proxy_connect_timeout 21600;
+	    proxy_send_timeout 21600;
+	    proxy_read_timeout 21600;
+	}
+        
+	location ~* ^/auth/global/(\w*)/(.*).htm$ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass  http://$1/auth/$2.htm?$args;
+    }
+        
+}
